@@ -1,49 +1,69 @@
 module App
 
 #r "packages/Suave/lib/net40/Suave.dll"
+#r "packages/Newtonsoft.Json/lib/net45/Newtonsoft.Json.dll"
 
-open Suave
-open Suave.Http
-open Suave.Http.Applicatives
 open System
 open System.IO
+open Suave.Http
+open Suave.Http.Applicatives
+open Suave.Utils.Collections
+open Suave.Types
+open Newtonsoft.Json
 
-let imagePath = __SOURCE_DIRECTORY__ + "/static/images/"
+// Types
+
+type ImageData = { name: string; url: string}
+type ChoiceResponse = { correct: bool; message: string }
+
+// Paths
+
+let staticFilesRoot = Files.resolvePath __SOURCE_DIRECTORY__ "static"
+let imagePath = Files.resolvePath staticFilesRoot "images"
+
+// Startup
 
 let images =
     Directory.GetFiles imagePath
     |> Array.map Path.GetFileName
 
-let getPathOrNone img =
-    let path = imagePath + img
-    if File.Exists path then
-        Some path
-    else
-        None
+let getImageUrl = sprintf "/images/%s"
 
 let rnd = new Random()
 let getRandomImage () =
     rnd.Next <| Array.length images
     |> Array.get images
-    |> sprintf "/images/%s"
+    |> fun img -> { name = img; url = getImageUrl img }
 
-let serveImage img =
-    match getPathOrNone img with
-    | Some path ->
-        match Writers.defaultMimeTypesMap (Path.GetExtension path) with
-        | Some mimetype -> Writers.setMimeType mimetype.name
-        | None -> succeed
-        >>= Files.sendFile path false
-    | None -> RequestErrors.NOT_FOUND "Could not find image"
+// Web parts
 
-let template = File.ReadAllText (__SOURCE_DIRECTORY__ + "/static/index.html")
+let template = File.ReadAllText (__SOURCE_DIRECTORY__ + "/templates/index.html")
 let index =
-    (fun _ ->
-        template.Replace("[IMAGE-URL]", getRandomImage())
-        |> Successful.OK )
+    fun _ ->
+        let imageData = getRandomImage()
+        template.Replace("[IMAGE-NAME]", imageData.name)
+                .Replace("[IMAGE-URL]", imageData.url)
+        |> Successful.OK
     |> warbler
+
+let handleChoice (req:HttpRequest) =
+    let frm = req.form
+    let choice = frm ^^ "choice"
+    let img = frm ^^ "img"
+    match img, choice with
+    | Choice1Of2 img, Choice1Of2 choice ->
+        JsonConvert.SerializeObject { correct = false; message = "" }
+        |> Successful.OK
+    | _ -> RequestErrors.BAD_REQUEST "bad"
+
+// App
 
 let app =
     choose [
-        path "/" >>= index
-        pathScan "/images/%s" serveImage ]
+        path "/" >>= choose [
+            GET >>= index
+            POST >>= request handleChoice ]
+        GET >>= choose [
+            Files.browse staticFilesRoot
+            Files.file (Files.resolvePath staticFilesRoot "404.html") ]
+        Files.file (Files.resolvePath staticFilesRoot "400.html") ]

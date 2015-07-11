@@ -1,0 +1,59 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css">
+    <link href="https://fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+    <style type="text/css">
+        .header {
+            text-align: center;
+        }
+    </style>
+    <script>
+        $(function() {
+            var imgName = '[IMAGE-NAME]';
+
+            function choose(choice) {
+                $.post('/', {
+                    img: imgName,
+                    choice: choice
+                })
+                .done(function(res) {
+                    res = JSON.parse(res);
+                    alert(res.correct ? "Riktig!" : "Feil");
+                    location.reload();
+                })
+                .fail(function() {
+                    console.log('fail');
+                })
+            }
+
+            $('#btn-genser').click(function() {
+                choose('genser');
+            });
+            $('#btn-pullover').click(function() {
+                choose('pullover');
+            });
+        });
+    </script>
+</head>
+<body>
+    <div class="container">
+        <div class="row">
+            <h1 class="header">Genser eller pullover?</h1>
+        </div>
+        <div class="row">
+            <div id="image-container" class="four columns offset-by-four">
+                <img class="u-max-full-width" src="[IMAGE-URL]" alt="Genser eller pullover?" />
+            </div>
+        </div>
+        <div class="row">
+            <button id="btn-genser" class="two columns u-full-width button-primary offset-by-four">
+                Genser
+            </button>
+            <button id="btn-pullover" class="two columns u-full-width button-primary">
+                Pullover
+            </button>
+        </div>
+    </div>
+</html>
