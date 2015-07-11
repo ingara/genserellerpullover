@@ -4,3 +4,4 @@ bin/
 .paket/paket.exe
 build.log
 build.running
+static/images/*.*
