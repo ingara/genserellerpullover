@@ -20,7 +20,9 @@
                 })
                 .done(function(res) {
                     res = JSON.parse(res);
-                    alert(res.correct ? "Riktig!" : "Feil");
+                    var msg = res.correct ? "Riktig! " : "Feil. ";
+                    msg = msg + res.message;
+                    alert(msg);
                     location.reload();
                 })
                 .fail(function() {

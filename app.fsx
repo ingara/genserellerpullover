@@ -13,8 +13,12 @@ open Newtonsoft.Json
 
 // Types
 
-type ImageData = { name: string; url: string}
-type ChoiceResponse = { correct: bool; message: string }
+type ImageData =
+    { name: string;
+      url: string }
+type ChoiceResponse =
+    { correct: bool;
+      message: string }
 
 // Paths
 
@@ -52,18 +56,19 @@ let handleChoice (req:HttpRequest) =
     let img = frm ^^ "img"
     match img, choice with
     | Choice1Of2 img, Choice1Of2 choice ->
-        JsonConvert.SerializeObject { correct = false; message = "" }
+        JsonConvert.SerializeObject
+            { correct = (choice="genser");
+              message = "Det er en genser." }
         |> Successful.OK
     | _ -> RequestErrors.BAD_REQUEST "bad"
 
 // App
 
 let app =
-    choose [
-        path "/" >>= choose [
-            GET >>= index
-            POST >>= request handleChoice ]
-        GET >>= choose [
-            Files.browse staticFilesRoot
-            Files.file (Files.resolvePath staticFilesRoot "404.html") ]
-        Files.file (Files.resolvePath staticFilesRoot "400.html") ]
+    choose
+        [ GET >>= choose
+            [ path "/" >>= index
+              Files.browse staticFilesRoot
+              Files.file (Files.resolvePath staticFilesRoot "404.html") ]
+          POST >>= path "/" >>= request handleChoice
+          Files.file (Files.resolvePath staticFilesRoot "400.html")]
